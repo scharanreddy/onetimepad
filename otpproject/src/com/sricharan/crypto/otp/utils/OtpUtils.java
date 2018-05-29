@@ -1,13 +1,12 @@
 package com.sricharan.crypto.otp.utils;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.security.SecureRandom;
-import com.sricharan.crypto.exception.CryptoException;
+import org.apache.commons.io.FileUtils;
+import com.sricharan.crypto.exception.*;
  
 /**
- * A utility class that encrypts or decrypts a file using the one time pad
+ * A utility class that encrypts or decrypts a file using the one time pad algorithm
+ * (http://www.cs.miami.edu/home/burt/learning/Csc609.051/notes/02.html)
  * @author sricharan reddy
  */
 
@@ -48,62 +47,60 @@ public class OtpUtils
      * @throws CryptoException
      * TODO : improve handling of output files etc
      */
-    public static File decrypt(File keyFile, File inputFile)
+    public static void decrypt(File keyFile, File inputFile,String plainFile)
             throws CryptoException 
     {
     	    OtpUtils utils   = new OtpUtils();
-        File plainFile   = utils.undoCrypto(keyFile, inputFile);
-		return plainFile;
-    }
+    	    utils.undoCrypto(keyFile,inputFile,plainFile);
+	}
  
     /**
      * Function to decrypt the file encrypted using one time pad
      * @param  keyFile   the file with the key used to encrypt the file
-     * @param  inputFile  
-     * @return
+     * @param  inputFile the file with the cipher text
+     * @param  the fully qualified file name for the decrypted file
+     * @return void
      * @throws CryptoException
      */
-    private File undoCrypto( File keyFile, File inputFile) throws CryptoException
+    private void undoCrypto(File keyFile, File inputFile,String plainFile) throws CryptoException
     {
-      	File plainFile = new File("plainfile.txt");
-    	    try(FileInputStream inputStream = new FileInputStream(inputFile);
-    	    		FileInputStream keyStream = new FileInputStream(keyFile);
-    	    		FileOutputStream outputStream = new FileOutputStream(plainFile);)
+      	
+    	    try
     	    {
+    	    	File   decryptedFile = new File(plainFile);
     	    byte[] inputBytes = new byte[(int) inputFile.length()];
         byte[] outputBytes = new byte[(int) inputFile.length()];
         byte[] keyBytes   = new byte[(int) keyFile.length()];
-        inputStream.read(inputBytes);
-        keyStream.read(keyBytes);
+        inputBytes = FileUtils.readFileToByteArray(inputFile);
+        keyBytes = FileUtils.readFileToByteArray(keyFile);
          
         // Decrypt
 	    for (int i = 0; i < inputBytes.length; i++)
 	    {
 	    	outputBytes[i] = (byte) (inputBytes[i] ^ keyBytes[i]);
 	    }
-        outputStream.write(outputBytes);
-        return plainFile;
-    	    }
+	    FileUtils.writeByteArrayToFile(decryptedFile, outputBytes);
+        }
     	    catch ( Exception ex) 
             {
                 throw new CryptoException("Error decrypting file", ex);
             }
 	}
 
-	private  File doCrypto( File inputFile,File outputFile) throws CryptoException 
+    /**
+     * 
+     */
+	private  File doCrypto(File inputFile,File outputFile) throws CryptoException 
 	{
-		
 		File keyFile = new File("keyfile.key");
-        try(FileInputStream inputStream = new FileInputStream(inputFile);
-        		 FileOutputStream outputStream = new FileOutputStream(outputFile);
-                FileOutputStream keyStream = new FileOutputStream(keyFile);) 
+        try 
         {
-            
             byte[] inputBytes  = new byte[(int) inputFile.length()];
             byte[] outputBytes = new byte[(int) inputFile.length()];
-            inputStream.read(inputBytes);
-            final  byte[] key = new byte[inputBytes.length];
-			new SecureRandom().nextBytes(key);
+            inputBytes = FileUtils.readFileToByteArray(inputFile);
+            //final  byte[] key = new byte[inputBytes.length];
+            //new SecureRandom().nextBytes(key);
+            final  byte[] key = KeyUtils.createKey(inputBytes.length);
 			
 			 // Encrypt
 		    for (int i = 0; i < key.length; i++)
@@ -111,8 +108,8 @@ public class OtpUtils
 		    	outputBytes[i] = (byte) (inputBytes[i] ^ key[i]);
 		    }
              
-            outputStream.write(outputBytes);
-            keyStream.write(key);
+		    FileUtils.writeByteArrayToFile(outputFile, outputBytes);
+            FileUtils.writeByteArrayToFile(keyFile, key);
             return keyFile;
          } 
         catch ( Exception ex) 

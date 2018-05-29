@@ -10,10 +10,11 @@ public class KeyUtils
 	 * @param keyArray
 	 * @return
 	 */
-	protected static byte[] keygen(byte[] keyArray)
+	protected static byte[] createKey(int  length)
 	{
-		SecureRandom sr = new SecureRandom();
-		return null;
+		final byte[] key = new byte[length];
+		new SecureRandom().nextBytes(key);
+		return key;
 	}
 
 }
